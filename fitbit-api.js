@@ -1,6 +1,6 @@
 // Fitbit API Integration
-const CLIENT_ID = 'YOUR_CLIENT_ID'; // Replace with your Fitbit Client ID
-const CLIENT_SECRET = 'YOUR_CLIENT_SECRET'; // Replace with your Fitbit Client Secret
+const CLIENT_ID = '23QFH8'; // Replace with your Fitbit Client ID
+const CLIENT_SECRET = 'c266df03fa484a5560405cf1a8019ec5'; // Replace with your Fitbit Client Secret
 const REDIRECT_URI = 'http://localhost:3000/callback'; // Update with your callback URL
 
 // Fitbit API endpoints

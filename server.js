@@ -9,8 +9,8 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Fitbit API credentials
-const CLIENT_ID = 'YOUR_CLIENT_ID';
-const CLIENT_SECRET = 'YOUR_CLIENT_SECRET';
+const CLIENT_ID = '23QFH8';
+const CLIENT_SECRET = 'c266df03fa484a5560405cf1a8019ec5';
 const REDIRECT_URI = 'http://localhost:3000/callback';
 
 // Store tokens (in production, use a proper database)
