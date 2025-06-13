@@ -5,325 +5,998 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitConnect - Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <style>
         :root {
-            --primary: #FF4B2B;
-            --secondary: #2B2B2B;
-            --accent: #00C9FF;
-            --text: #FFFFFF;
-            --gradient: linear-gradient(45deg, var(--primary), var(--accent));
+            --primary-bg: #1A1A2E; /* Dark blue/purple */
+            --secondary-bg: #0F0F1A; /* Even darker blue */
+            --card-bg: rgba(255, 255, 255, 0.05); /* Translucent white for cards */
+            --text-color: #FFFFFF;
+            --accent-red: #FF3B30;
+            --accent-blue: #007AFF;
+            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
-
+    
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
+    
         body {
-            background-color: var(--secondary);
-            color: var(--text);
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            background-image: radial-gradient(circle at top left, var(--primary-bg), var(--secondary-bg));
+            background-repeat: no-repeat;
+            background-attachment: fixed;
         }
-
+    
         .navbar {
-            position: fixed;
+            position: sticky;
             top: 0;
             width: 100%;
-            padding: 1.5rem 5%;
+            padding: 1rem 3%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(43, 43, 43, 0.95);
-            backdrop-filter: blur(10px);
+            background: rgba(26, 26, 46, 0.8); /* Slightly darker than primary-bg */
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-bottom: var(--glass-border);
             z-index: 1000;
-            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
         }
-
-        .logo {
-            font-size: 2rem;
+    
+        .navbar .logo {
+            font-size: 1.8rem;
             font-weight: 700;
-            color: var(--text);
+            color: var(--text-color);
             text-decoration: none;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-
-        .logo:hover {
-            transform: scale(1.05);
+    
+        .navbar .logo i {
+            color: var(--accent-red);
         }
-
+    
         .nav-links {
             display: flex;
             gap: 2rem;
             align-items: center;
         }
-
+    
         .nav-links a {
-            color: var(--text);
+            color: var(--text-color);
             text-decoration: none;
             font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
             transition: all 0.3s ease;
         }
-
+    
         .nav-links a:hover {
-            color: var(--primary);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--accent-red);
         }
-
+    
         .user-profile {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
             cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
         }
-
+    
         .user-avatar {
-            width: 40px;
-            height: 40px;
+            width: 35px;
+            height: 35px;
             border-radius: 50%;
-            background: var(--gradient);
+            background: var(--accent-blue);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
+            font-size: 0.9rem;
         }
-
-        .dashboard-container {
-            margin-top: 100px;
-            padding: 2rem 5%;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
+    
+        .user-name {
+            font-weight: 500;
+            color: var(--text-color);
         }
-
+    
+        .main-dashboard-content {
+            flex-grow: 1;
+            display: flex;
+            flex-wrap: wrap;
+            padding: 1rem;
+            gap: 1rem;
+            margin-top: 70px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+    
+        .left-panel, .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            flex: 1; /* Allow panels to grow and shrink */
+            min-width: 280px; /* Adjusted min-width for better balance */
+            max-width: 32%; /* Allocate about a third of the space */
+        }
+    
+        .center-panel {
+            flex-grow: 2;
+            max-width: 35%; /* Allocate slightly more than a third */
+            min-width: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            min-height: 350px;
+        }
+    
         .dashboard-card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 2rem;
+            background: var(--card-bg);
             border-radius: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            animation: fadeIn 0.5s ease;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: var(--glass-border);
+            box-shadow: var(--shadow);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            height: auto; /* Allow height to adjust based on content */
+            min-height: 120px; /* Ensure a minimum height */
         }
-
+    
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .card-header h2 {
-            font-size: 1.5rem;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .card-icon {
-            font-size: 1.5rem;
-            color: var(--primary);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-        }
-
-        .stat-item {
-            text-align: center;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
             margin-bottom: 0.5rem;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
-
-        .stat-label {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
+    
+        .card-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-color);
         }
-
-        .activity-list {
-            list-style: none;
+    
+        .card-icon {
+            font-size: 1.1rem;
+            color: var(--accent-blue);
         }
-
-        .activity-item {
+    
+        /* Specific card styles */
+        .profile-card .card-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.75rem;
+        }
+    
+        .profile-card .profile-info {
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding: 1rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-
-        .activity-item:last-child {
-            border-bottom: none;
-        }
-
-        .activity-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: var(--gradient);
+    
+        .profile-card .profile-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--accent-red), var(--accent-blue));
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+    
+        .profile-card .profile-details h3 {
             font-size: 1.2rem;
-        }
-
-        .activity-details {
-            flex: 1;
-        }
-
-        .activity-title {
-            font-weight: 600;
             margin-bottom: 0.25rem;
         }
-
-        .activity-time {
+    
+        .profile-card .profile-details p {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+    
+        .profile-card .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+    
+        .profile-card .stat-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.6rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    
+        .profile-card .stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent-red);
+            margin-bottom: 0.2rem;
+        }
+    
+        .profile-card .stat-label {
+            font-size: 0.75rem;
             color: rgba(255, 255, 255, 0.6);
-            font-size: 0.9rem;
         }
-
-        .progress-bar {
+    
+        .graph-card {
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+    
+        .graph-placeholder {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 0.75rem;
+        }
+    
+        .protein-counter {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            text-align: center;
+        }
+    
+        .protein-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-red);
+        }
+    
+        .protein-label {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+    
+        .protein-progress-circle {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: conic-gradient(var(--accent-blue) 75%, rgba(255, 255, 255, 0.2) 0%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-color);
+        }
+    
+        .model-placeholder {
+            position: absolute;
             width: 100%;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 1rem 0;
-        }
-
-        .progress-fill {
             height: 100%;
-            background: var(--gradient);
-            border-radius: 4px;
-            transition: width 0.3s ease;
+            background-image: url('https://via.placeholder.com/400x600/1A1A2E/FFFFFF?text=3D+Model+Placeholder');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            border-radius: 20px;
+            opacity: 0.8;
+            filter: grayscale(20%);
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+    
+        .right-panel-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem; /* Adjusted gap */
+            width: 100%;
         }
-
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
+    
+        .right-panel-item {
+            background: var(--card-bg);
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: var(--glass-border);
+            box-shadow: var(--shadow);
+            padding: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 100px;
+            position: relative;
+        }
+    
+        .right-panel-item .icon-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: conic-gradient(var(--accent-red) 70%, rgba(255, 255, 255, 0.2) 0%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: var(--text-color);
+            margin-bottom: 0.4rem;
+            position: relative;
+        }
+    
+        .right-panel-item .icon-circle.blue {
+            background: conic-gradient(var(--accent-blue) 40%, rgba(255, 255, 255, 0.2) 0%);
+        }
+    
+        .right-panel-item .icon-circle span {
+            position: absolute;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+    
+        .right-panel-item p {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+    
+        /* Specific text for right panel items */
+        .right-panel-item .top-left-number {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+    
+        .right-panel-item .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 0.4rem;
+        }
+    
+        .right-panel-item .label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+    
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .main-dashboard-content {
+                flex-direction: column;
+                align-items: center;
+                padding: 1rem;
+                gap: 1rem;
             }
-
-            .dashboard-container {
+            .left-panel, .right-panel, .center-panel {
+                width: 95%; /* Wider on smaller screens */
+                max-width: 700px; /* Adjusted max-width for smaller screens */
+                min-width: unset;
+            }
+            .right-panel-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Adjust for more flexible columns */
+                gap: 1rem;
+            }
+            .dashboard-card {
+                padding: 0.8rem;
+                min-height: 90px;
+            }
+            .graph-card {
+                min-height: 150px;
+            }
+            .center-panel {
+                min-height: 300px;
+            }
+        }
+    
+        @media (max-width: 768px) {
+            .navbar .nav-links {
+                display: none; /* Hide nav links on small screens */
+            }
+            .navbar {
+                padding: 0.8rem 4%;
+            }
+            .main-dashboard-content {
+                padding: 0.8rem;
+                gap: 0.8rem;
+            }
+            .left-panel, .right-panel, .center-panel {
+                width: 100%;
+                max-width: unset;
+            }
+            .right-panel-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 0.8rem;
+            }
+            .dashboard-card {
+                padding: 0.7rem;
+                min-height: 80px;
+            }
+            .graph-card {
+                min-height: 120px;
+            }
+            .center-panel {
+                min-height: 250px;
+            }
+        }
+    
+        @media (max-width: 480px) {
+            .right-panel-grid {
                 grid-template-columns: 1fr;
+                gap: 0.7rem;
+            }
+            .main-dashboard-content {
+                padding: 0.5rem;
+                gap: 0.5rem;
+            }
+            .dashboard-card {
+                padding: 0.6rem;
+                min-height: 70px;
+            }
+            .graph-card {
+                min-height: 100px;
+            }
+            .center-panel {
+                min-height: 200px;
             }
         }
     </style>
 </head>
 <body>
     <nav class="navbar">
-        <a href="LandingPage.html" class="logo">FitConnect</a>
+        <a href="LandingPage.html" class="logo"><i class="fas fa-fire"></i> FitConnect</a>
         <div class="nav-links">
+            <a href="LandingPage.html">Home</a>
             <a href="#dashboard">Dashboard</a>
             <a href="#workouts">Workouts</a>
             <a href="#nutrition">Nutrition</a>
             <a href="#progress">Progress</a>
-            <div class="user-profile">
-                <div class="user-avatar">JD</div>
-            </div>
+        </div>
+        <div class="user-profile">
+            <div class="user-avatar">JD</div>
+            <span class="user-name">John Doe</span>
         </div>
     </nav>
 
-    <div class="dashboard-container">
-        <div class="dashboard-card">
-            <div class="card-header">
-                <h2>Today's Overview</h2>
-                <i class="fas fa-chart-line card-icon"></i>
+    <div class="main-dashboard-content">
+        <div class="left-panel">
+            <div class="dashboard-card profile-card">
+                <div class="card-header">
+                    <h2>Suelly Profile</h2>
+                    <span class="card-icon"><i class="fas fa-user"></i></span>
+                </div>
+                <div class="profile-info">
+                    <div class="profile-avatar">S</div>
+                    <div class="profile-details">
+                        <h3>Suelly</h3>
+                        <p>Fitness Enthusiast</p>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">80</div>
+                        <div class="stat-label">Steps (x1000)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">90</div>
+                        <div class="stat-label">Activity %</div>
+                    </div>
+                </div>
+                <div class="graph-placeholder">
+                    <canvas id="stepsActivityChart"></canvas>
+                </div>
             </div>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-value">2,450</div>
-                    <div class="stat-label">Steps</div>
+    
+            <div class="dashboard-card graph-card">
+                <div class="card-header">
+                    <h2>Calories Burned</h2>
+                    <span class="card-icon"><i class="fas fa-fire-alt"></i></span>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value">1,200</div>
-                    <div class="stat-label">Calories</div>
+                <div class="graph-placeholder">
+                    <canvas id="caloriesBurnedChart"></canvas>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value">45</div>
-                    <div class="stat-label">Minutes</div>
+            </div>
+    
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2>Protein Intake</h2>
+                    <span class="card-icon"><i class="fas fa-egg"></i></span>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value">3</div>
-                    <div class="stat-label">Workouts</div>
+                <div class="protein-counter">
+                    <div>
+                        <div class="protein-value">5428</div>
+                        <div class="protein-label">mg Total</div>
+                    </div>
+                    <div class="protein-progress-circle">1</div>
+                    <div>
+                        <div class="protein-value">34</div>
+                        <div class="protein-label">g Consumed</div>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="dashboard-card graph-card">
+                <div class="card-header">
+                    <h2>Daily Progress</h2>
+                    <span class="card-icon"><i class="fas fa-chart-line"></i></span>
+                </div>
+                <div class="graph-placeholder">
+                    <canvas id="dailyProgressChart"></canvas>
                 </div>
             </div>
         </div>
-
-        <div class="dashboard-card">
-            <div class="card-header">
-                <h2>Weekly Progress</h2>
-                <i class="fas fa-calendar-alt card-icon"></i>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: 75%;"></div>
-            </div>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-value">75%</div>
-                    <div class="stat-label">Goal Progress</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">5/7</div>
-                    <div class="stat-label">Days Active</div>
-                </div>
-            </div>
+    
+        <div class="center-panel">
+            <div id="modelContainer" class="model-placeholder"></div>
         </div>
-
-        <div class="dashboard-card">
-            <div class="card-header">
-                <h2>Recent Activity</h2>
-                <i class="fas fa-history card-icon"></i>
+    
+        <div class="right-panel">
+            <div class="right-panel-grid">
+                <div class="right-panel-item">
+                    <div class="top-left-number">92</div>
+                    <div class="icon-circle">
+                        <span>269</span>
+                    </div>
+                    <p>Idk</p>
+                </div>
+    
+                <div class="right-panel-item">
+                    <div class="icon-circle blue">
+                        <span>41</span>
+                    </div>
+                    <p>Protein</p>
+                </div>
+    
+                <div class="right-panel-item">
+                    <div class="icon-circle blue">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <p>Zones</p>
+                    <div class="value"></div>
+                    <div class="label"></div>
+                </div>
+    
+                <div class="right-panel-item">
+                    <div class="icon-circle red">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <p>Colries</p>
+                    <div class="value">1</div>
+                    <div class="label"></div>
+                </div>
+    
+                <div class="right-panel-item">
+                    <div class="icon-circle blue">
+                        <i class="fas fa-male"></i>
+                    </div>
+                    <p>Purfino</p>
+                    <div class="value">Mortal</div>
+                </div>
+    
+                <div class="right-panel-item">
+                    <div class="icon-circle red">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <p>23/20</p>
+                    <div class="value">Aday</div>
+                </div>
+    
+                <div class="right-panel-item">
+                    <div class="value">0239</div>
+                    <p>Calories</p>
+                </div>
+    
+                <div class="right-panel-item">
+                    <div class="graph-placeholder" style="height: 50px; width: 100%; margin-bottom: 0.5rem; background: rgba(255,255,255,0.1);">
+                        <canvas id="smallGraph"></canvas>
+                    </div>
+                    <div class="value">8</div>
+                    <p>Goals</p>
+                </div>
             </div>
-            <ul class="activity-list">
-                <li class="activity-item">
-                    <div class="activity-icon">
-                        <i class="fas fa-running"></i>
-                    </div>
-                    <div class="activity-details">
-                        <div class="activity-title">Morning Run</div>
-                        <div class="activity-time">2 hours ago</div>
-                    </div>
-                </li>
-                <li class="activity-item">
-                    <div class="activity-icon">
-                        <i class="fas fa-dumbbell"></i>
-                    </div>
-                    <div class="activity-details">
-                        <div class="activity-title">Upper Body Workout</div>
-                        <div class="activity-time">5 hours ago</div>
-                    </div>
-                </li>
-                <li class="activity-item">
-                    <div class="activity-icon">
-                        <i class="fas fa-walking"></i>
-                    </div>
-                    <div class="activity-details">
-                        <div class="activity-title">Evening Walk</div>
-                        <div class="activity-time">Yesterday</div>
-                    </div>
-                </li>
-            </ul>
         </div>
     </div>
+<script type="module">
+    import { initiateFitbitAuth, getDailyActivity, getHeartRate, getSleepData } from './fitbit-api.js';
+
+    // Function to update dashboard with Fitbit data
+    async function updateDashboard() {
+        try {
+            // Fetch daily activity data
+            const activityResponse = await fetch('/api/fitbit/activities/date/today.json');
+            const activityData = await activityResponse.json();
+            
+            // Update steps
+            const stepsValue = document.querySelector('.stat-value');
+            if (stepsValue) {
+                stepsValue.textContent = Math.round(activityData.summary.steps / 1000);
+            }
+
+            // Update calories
+            const caloriesValue = document.querySelector('.right-panel-item:nth-child(4) .value');
+            if (caloriesValue) {
+                caloriesValue.textContent = Math.round(activityData.summary.caloriesOut);
+            }
+
+            // Fetch heart rate data
+            const heartRateResponse = await fetch('/api/fitbit/activities/heart/date/today/1d.json');
+            const heartRateData = await heartRateResponse.json();
+            
+            // Update heart rate zones
+            const zonesValue = document.querySelector('.right-panel-item:nth-child(3) .value');
+            if (zonesValue && heartRateData['activities-heart'][0].value.heartRateZones) {
+                const zones = heartRateData['activities-heart'][0].value.heartRateZones;
+                zonesValue.textContent = `${zones[0].minutes} min`;
+            }
+
+            // Update charts with new data
+            updateCharts(activityData, heartRateData);
+        } catch (error) {
+            console.error('Error updating dashboard:', error);
+        }
+    }
+
+    // Function to update charts with new data
+    function updateCharts(activityData, heartRateData) {
+        // Update steps chart
+        const stepsChart = Chart.getChart('stepsActivityChart');
+        if (stepsChart) {
+            stepsChart.data.datasets[0].data = [
+                activityData.summary.steps,
+                activityData.summary.veryActiveMinutes,
+                activityData.summary.fairlyActiveMinutes,
+                activityData.summary.lightlyActiveMinutes,
+                activityData.summary.sedentaryMinutes
+            ];
+            stepsChart.update();
+        }
+
+        // Update heart rate chart
+        const heartRateChart = Chart.getChart('caloriesBurnedChart');
+        if (heartRateChart && heartRateData['activities-heart'][0].value.heartRateZones) {
+            const zones = heartRateData['activities-heart'][0].value.heartRateZones;
+            heartRateChart.data.datasets[0].data = zones.map(zone => zone.minutes);
+            heartRateChart.update();
+        }
+    }
+
+    // Add Fitbit connect button to the navbar
+    const navLinks = document.querySelector('.nav-links');
+    const fitbitButton = document.createElement('a');
+    fitbitButton.href = '#';
+    fitbitButton.innerHTML = '<i class="fab fa-fitbit"></i> Connect Fitbit';
+    fitbitButton.onclick = (e) => {
+        e.preventDefault();
+        initiateFitbitAuth();
+    };
+    navLinks.appendChild(fitbitButton);
+
+    // Check for Fitbit authentication code in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+        // Remove the code from URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        // Start updating dashboard
+        updateDashboard();
+        // Set up periodic updates
+        setInterval(updateDashboard, 300000); // Update every 5 minutes
+    }
+</script>
+<script>
+    // Chart.js Graphs
+    const chartColors = {
+        red: 'rgb(255, 99, 132)',
+        orange: 'rgb(255, 159, 64)',
+        yellow: 'rgb(255, 205, 86)',
+        green: 'rgb(75, 192, 192)',
+        blue: 'rgb(54, 162, 235)',
+        purple: 'rgb(153, 102, 255)',
+        grey: 'rgb(201, 203, 207)'
+    };
+
+    // Steps Activity Chart (Bar Graph)
+    const stepsActivityCtx = document.getElementById('stepsActivityChart').getContext('2d');
+    new Chart(stepsActivityCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Steps',
+                data: [65, 59, 80, 81, 56, 55, 40],
+                backgroundColor: 'rgba(0, 122, 255, 0.6)', // Accent blue
+                borderColor: 'rgba(0, 122, 255, 1)',
+                borderWidth: 1,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: 'rgba(255, 255, 255, 0.7)'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: 'rgba(255, 255, 255, 0.7)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.raw + 'k';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Calories Burned Chart (Line Graph)
+    const caloriesBurnedCtx = document.getElementById('caloriesBurnedChart').getContext('2d');
+    new Chart(caloriesBurnedCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+            datasets: [{
+                label: 'Calories Burned',
+                data: [300, 320, 280, 350, 400, 380, 450],
+                fill: true,
+                backgroundColor: 'rgba(255, 59, 48, 0.2)', // Accent red with transparency
+                borderColor: 'rgba(255, 59, 48, 1)', // Accent red
+                tension: 0.3,
+                pointBackgroundColor: 'rgba(255, 59, 48, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(255, 59, 48, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: 'rgba(255, 255, 255, 0.7)'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: 'rgba(255, 255, 255, 0.7)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // Daily Progress Chart (Line Graph)
+    const dailyProgressCtx = document.getElementById('dailyProgressChart').getContext('2d');
+    new Chart(dailyProgressCtx, {
+        type: 'line',
+        data: {
+            labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+            datasets: [{
+                label: 'Progress A',
+                data: [10, 15, 12, 18, 20, 16, 22],
+                borderColor: 'rgba(0, 122, 255, 1)', // Accent blue
+                tension: 0.3,
+                fill: false,
+                pointBackgroundColor: 'rgba(0, 122, 255, 1)',
+                pointBorderColor: '#fff'
+            },{
+                label: 'Progress B',
+                data: [8, 12, 10, 15, 17, 14, 19],
+                borderColor: 'rgba(255, 59, 48, 1)', // Accent red
+                tension: 0.3,
+                fill: false,
+                pointBackgroundColor: 'rgba(255, 59, 48, 1)',
+                pointBorderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: 'rgba(255, 255, 255, 0.7)'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: 'rgba(255, 255, 255, 0.7)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: 'rgba(255, 255, 255, 0.8)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Small Graph (Line Graph)
+    const smallGraphCtx = document.getElementById('smallGraph').getContext('2d');
+    new Chart(smallGraphCtx, {
+        type: 'line',
+        data: {
+            labels: ['', '', '', '', '', '', ''],
+            datasets: [{
+                label: 'Value',
+                data: [10, 5, 15, 8, 12, 6, 18],
+                borderColor: 'rgba(255, 59, 48, 1)', // Accent red
+                tension: 0.4,
+                fill: true,
+                backgroundColor: 'rgba(255, 59, 48, 0.2)',
+                pointRadius: 0 // Hide points
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    display: false,
+                    beginAtZero: true
+                },
+                x: {
+                    display: false
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    enabled: false
+                }
+            },
+            layout: {
+                padding: {
+                    left: 0,
+                    right: 0,
+                    top: 0,
+                    bottom: 0
+                }
+            }
+        }
+    });
+
+        // Three.js 3D Model
+        const modelContainer = document.getElementById('modelContainer');
+
+// Scene
+const scene = new THREE.Scene();
+scene.background = null; // Make background transparent
+
+// Camera
+const camera = new THREE.PerspectiveCamera(75, modelContainer.clientWidth / modelContainer.clientHeight, 0.1, 1000);
+camera.position.set(0, 0, 2); // Adjusted for a basic view
+
+// Renderer
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // alpha: true for transparent background
+renderer.setSize(modelContainer.clientWidth, modelContainer.clientHeight);
+renderer.setPixelRatio(window.devicePixelRatio); // Improve rendering quality on high-DPI screens
+modelContainer.appendChild(renderer.domElement);
+
+// Lighting (Essential for seeing realistic models)
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Soft white light
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+directionalLight.position.set(0, 10, 5); // Position light from top-front
+scene.add(directionalLight);
+
+// GLTFLoader
+const loader = new THREE.GLTFLoader();
+
+let humanModel; // To store the loaded model
+
+// Load a GLTF model
+loader.load(
+    // Replace with the actual path to your 3D human model file
+    'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/BoxAnimated/glTF/BoxAnimated.gltf', // Placeholder: Animated Box from glTF Sample Models
+    function (gltf) {
+        humanModel = gltf.scene;
+        humanModel.scale.set(0.8, 0.8, 0.8); // Adjust scale as needed
+        humanModel.position.set(0, -0.5, 0); // Adjust position to center the model
+        scene.add(humanModel);
+
+        // If the model has animations, you can play them here
+        // const mixer = new THREE.AnimationMixer(humanModel);
+        // gltf.animations.forEach((clip) => {
+        //     mixer.clipAction(clip).play();
+        // });
+        // You would also need to update the mixer in the animate function
+    },
+    undefined, // Optional: A function to call while loading is progressing
+    function (error) {
+        console.error('An error occurred while loading the model:', error);
+        // Fallback to a simple cube if model loading fails
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshBasicMaterial({ color: 0x007AFF, wireframe: true });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+        humanModel = cube; // Assign cube as humanModel for animation
+    }
+);
+
+// Handle window resize
+window.addEventListener('resize', () => {
+    camera.aspect = modelContainer.clientWidth / modelContainer.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(modelContainer.clientWidth, modelContainer.clientHeight);
+});
+
+// Animation
+function animate() {
+    requestAnimationFrame(animate);
+
+    if (humanModel) {
+        humanModel.rotation.y += 0.005; // Rotate the human model
+        // If you have an animation mixer, update it here:
+        // if (mixer) mixer.update(0.01); // Adjust delta time as needed
+    }
+
+    renderer.render(scene, camera);
+}
+animate();
+</script>
 </body>
 </html>

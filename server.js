@@ -1,137 +1,97 @@
 const express = require('express');
-const { google } = require('googleapis');
 const cors = require('cors');
-const bodyParser = require('body-parser');
-const path = require('path');
-
+const axios = require('axios');
 const app = express();
-const port = 3000;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.json());
+app.use(express.static('public'));
 
-// Google Sheets setup
-const auth = new google.auth.GoogleAuth({
-    keyFile: 'credentials.json',
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+// Fitbit API credentials
+const CLIENT_ID = 'YOUR_CLIENT_ID';
+const CLIENT_SECRET = 'YOUR_CLIENT_SECRET';
+const REDIRECT_URI = 'http://localhost:3000/callback';
+
+// Store tokens (in production, use a proper database)
+let tokens = {};
+
+// OAuth callback endpoint
+app.get('/callback', async (req, res) => {
+    const { code } = req.query;
+    
+    try {
+        const response = await axios.post('https://api.fitbit.com/oauth2/token', 
+            new URLSearchParams({
+                grant_type: 'authorization_code',
+                code: code,
+                redirect_uri: REDIRECT_URI
+            }), {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': 'Basic ' + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')
+                }
+            }
+        );
+
+        tokens = response.data;
+        res.redirect('/dashboard.html');
+    } catch (error) {
+        console.error('Error getting access token:', error);
+        res.status(500).send('Error during authentication');
+    }
 });
 
-const sheets = google.sheets({ version: 'v4', auth });
-const SPREADSHEET_ID = '1ZSDzg6-52ajNghwFhPAyW1IK-qWbdoDwcALTWorKE7o';
+// Proxy endpoint for Fitbit API calls
+app.get('/api/fitbit/*', async (req, res) => {
+    if (!tokens.access_token) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
 
-// Helper function to ensure sheet exists
-async function ensureSheetExists() {
     try {
-        // Try to get the sheet
-        await sheets.spreadsheets.values.get({
-            spreadsheetId: SPREADSHEET_ID,
-            range: 'Sheet1!A1',
+        const fitbitPath = req.path.replace('/api/fitbit', '');
+        const response = await axios.get(`https://api.fitbit.com/1/user/-${fitbitPath}`, {
+            headers: {
+                'Authorization': `Bearer ${tokens.access_token}`
+            }
         });
+        res.json(response.data);
     } catch (error) {
-        if (error.code === 400) {
-            // If sheet doesn't exist, create it
-            await sheets.spreadsheets.batchUpdate({
-                spreadsheetId: SPREADSHEET_ID,
-                resource: {
-                    requests: [{
-                        addSheet: {
-                            properties: {
-                                title: 'Sheet1',
-                                gridProperties: {
-                                    rowCount: 1000,
-                                    columnCount: 26
-                                }
-                            }
+        if (error.response?.status === 401) {
+            // Token expired, try to refresh
+            try {
+                const refreshResponse = await axios.post('https://api.fitbit.com/oauth2/token',
+                    new URLSearchParams({
+                        grant_type: 'refresh_token',
+                        refresh_token: tokens.refresh_token
+                    }), {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Authorization': 'Basic ' + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')
                         }
-                    }]
-                }
-            });
-
-            // Add headers
-            await sheets.spreadsheets.values.update({
-                spreadsheetId: SPREADSHEET_ID,
-                range: 'Sheet1!A1:D1',
-                valueInputOption: 'USER_ENTERED',
-                resource: {
-                    values: [['First Name', 'Last Name', 'Email', 'Password']]
-                }
-            });
-        }
-    }
-}
-
-// Initialize sheet
-ensureSheetExists().catch(console.error);
-
-// Routes
-app.post('/signup', async (req, res) => {
-    try {
-        const { firstName, lastName, email, password } = req.body;
-
-        // Check if user already exists
-        const response = await sheets.spreadsheets.values.get({
-            spreadsheetId: SPREADSHEET_ID,
-            range: 'Sheet1!A:D',
-        });
-
-        const users = response.data.values || [];
-        const userExists = users.some(user => user[2] === email);
-
-        if (userExists) {
-            return res.status(400).json({ error: 'User already exists' });
-        }
-
-        // Add new user
-        await sheets.spreadsheets.values.append({
-            spreadsheetId: SPREADSHEET_ID,
-            range: 'Sheet1!A:D',
-            valueInputOption: 'USER_ENTERED',
-            resource: {
-                values: [[firstName, lastName, email, password]],
-            },
-        });
-
-        res.status(201).json({ message: 'User created successfully' });
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-app.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        // Get users from sheet
-        const response = await sheets.spreadsheets.values.get({
-            spreadsheetId: SPREADSHEET_ID,
-            range: 'Sheet1!A:D',
-        });
-
-        const users = response.data.values || [];
-        // Skip header row
-        const user = users.slice(1).find(user => user[2] === email && user[3] === password);
-
-        if (user) {
-            res.json({ 
-                message: 'Login successful',
-                user: {
-                    firstName: user[0],
-                    lastName: user[1],
-                    email: user[2]
-                }
-            });
+                    }
+                );
+                tokens = refreshResponse.data;
+                
+                // Retry the original request
+                const retryResponse = await axios.get(`https://api.fitbit.com/1/user/-${req.path.replace('/api/fitbit', '')}`, {
+                    headers: {
+                        'Authorization': `Bearer ${tokens.access_token}`
+                    }
+                });
+                res.json(retryResponse.data);
+            } catch (refreshError) {
+                console.error('Error refreshing token:', refreshError);
+                res.status(401).json({ error: 'Authentication failed' });
+            }
         } else {
-            res.status(401).json({ error: 'Invalid credentials' });
+            console.error('Error fetching Fitbit data:', error);
+            res.status(500).json({ error: 'Error fetching data from Fitbit' });
         }
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
